@@ -1,0 +1,2084 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoSpec — Technical Workshop Manual Viewer & Instant Search</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- PDF.js via cdnjs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            blueprint: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#0f172a',
+              950: '#090d16',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    /* Custom scrollbar for crisp engineering aesthetic */
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
+    .blueprint-grid {
+      background-image: 
+        linear-gradient(to right, rgba(59, 130, 246, 0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(59, 130, 246, 0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .dark .blueprint-grid {
+      background-image: 
+        linear-gradient(to right, rgba(59, 130, 246, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased overflow-hidden h-screen flex flex-col select-none">
+
+  <!-- TOP HEADER BAR -->
+  <header class="h-14 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-4 flex items-center justify-between gap-2 shrink-0 z-30">
+    <!-- Left: Brand & Sidebar Toggle -->
+    <div class="flex items-center gap-2.5 min-w-0">
+      <button id="toggleSidebarBtn" title="Toggle Sidebar" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+        </div>
+        <div class="hidden sm:block leading-tight">
+          <div class="font-bold text-sm tracking-tight flex items-center gap-1.5">
+            <span>AutoSpec</span>
+            <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">Workshop</span>
+          </div>
+          <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[190px]" id="activeManualSubtitle">Daihatsu 660cc EF Sample</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Global Instant Search Input -->
+    <div class="flex-1 max-w-xl mx-2 relative">
+      <div class="relative flex items-center">
+        <svg class="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          id="globalSearchInput"
+          type="text"
+          placeholder="Search torque, timing marks, valve lash, pinouts..."
+          class="w-full pl-9 pr-24 py-1.5 text-sm rounded-lg bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-slate-400 dark:placeholder-slate-500 transition"
+        />
+        <div class="absolute right-2 flex items-center gap-1">
+          <button id="clearSearchBtn" class="hidden text-xs px-1.5 py-0.5 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-700">Esc</button>
+          <span id="searchBadgeCount" class="hidden text-[11px] font-mono px-1.5 py-0.5 rounded bg-blue-600 text-white font-medium">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Upload PDF, Split Reference Toggle, Theme Toggle -->
+    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <label for="pdfUploadInput" class="cursor-pointer flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs sm:text-sm font-medium shadow-sm transition">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        <span class="hidden md:inline">Upload PDF</span>
+        <span class="md:hidden">PDF</span>
+      </label>
+      <input id="pdfUploadInput" type="file" accept="application/pdf" multiple class="hidden" />
+
+      <button id="toggleSplitRefBtn" title="Toggle Side-by-Side Spec / Pin Reference" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-xs sm:text-sm font-medium transition">
+        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+        </svg>
+        <span class="hidden lg:inline">Split Ref</span>
+      </button>
+
+      <button id="themeToggleBtn" title="Toggle Light / Dark Theme" class="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition">
+        <svg id="sunIcon" class="w-4 h-4 hidden dark:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+        <svg id="moonIcon" class="w-4 h-4 block dark:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- INDEXING PROGRESS BANNER (Hidden when idle) -->
+  <div id="indexingBanner" class="hidden bg-blue-600 text-white px-4 py-1.5 text-xs flex items-center justify-between gap-4 shrink-0 z-20 shadow">
+    <div class="flex items-center gap-2">
+      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      <span id="indexingStatusText" class="font-medium">Indexing manual pages for instant search...</span>
+    </div>
+    <div class="flex items-center gap-3 w-48 sm:w-64">
+      <div class="flex-1 h-1.5 bg-blue-900/50 rounded-full overflow-hidden">
+        <div id="indexingProgressBar" class="h-full bg-white transition-all duration-150" style="width: 0%"></div>
+      </div>
+      <span id="indexingPercentText" class="font-mono text-[11px]">0%</span>
+    </div>
+  </div>
+
+  <!-- MAIN WORKSPACE CONTAINER -->
+  <div class="flex-1 flex min-h-0 overflow-hidden relative">
+
+    <!-- LEFT SIDEBAR: MANUALS, TOC, THUMBNAILS, SEARCH RESULTS, PINS -->
+    <aside id="leftSidebar" class="w-80 max-w-[85vw] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 z-20 transition-all duration-200">
+      
+      <!-- Loaded Manuals Selector Bar -->
+      <div class="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/80">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Loaded Manuals (<span id="manualCountBadge">1</span>)</span>
+          <label for="pdfUploadInput" class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium">+ Add PDF</label>
+        </div>
+        <select id="manualSelector" class="w-full text-xs font-medium rounded-lg px-2.5 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 truncate">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <!-- Sidebar Navigation Tabs -->
+      <div class="grid grid-cols-4 border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold bg-slate-50 dark:bg-slate-900">
+        <button data-tab="toc" class="sidebar-tab py-2.5 text-center border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 transition">Contents</button>
+        <button data-tab="thumbs" class="sidebar-tab py-2.5 text-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">Pages</button>
+        <button data-tab="search" class="sidebar-tab py-2.5 text-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition relative">
+          Search
+          <span id="tabSearchDot" class="hidden w-1.5 h-1.5 rounded-full bg-blue-500 inline-block ml-0.5 align-top"></span>
+        </button>
+        <button data-tab="pins" class="sidebar-tab py-2.5 text-center border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">
+          Pins (<span id="pinCountBadge">0</span>)
+        </button>
+      </div>
+
+      <!-- Sidebar Tab Content Area -->
+      <div class="flex-1 overflow-y-auto p-3" id="sidebarContentArea">
+        
+        <!-- TAB 1: TABLE OF CONTENTS -->
+        <div id="tab-toc" class="space-y-1">
+          <div class="text-xs text-slate-500 dark:text-slate-400 mb-2 flex items-center justify-between">
+            <span>Chapters & Sections</span>
+            <span id="tocSourceBadge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800">Auto-Indexed</span>
+          </div>
+          <div id="tocListContainer" class="space-y-1"></div>
+        </div>
+
+        <!-- TAB 2: VISUAL THUMBNAILS GRID -->
+        <div id="tab-thumbs" class="hidden">
+          <div class="grid grid-cols-2 gap-2.5" id="thumbnailsGrid"></div>
+        </div>
+
+        <!-- TAB 3: SEARCH RESULTS -->
+        <div id="tab-search" class="hidden space-y-2.5">
+          <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+            <label class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input id="searchAllManualsCheckbox" type="checkbox" checked class="rounded text-blue-600 focus:ring-blue-500 bg-slate-800 border-slate-600" />
+              <span>Search all manuals</span>
+            </label>
+            <span id="searchSummaryLabel" class="text-[11px] font-mono text-slate-400">Type to search</span>
+          </div>
+          <!-- Quick Workshop Search Chips -->
+          <div id="quickSearchChips" class="flex flex-wrap gap-1.5">
+            <button class="quick-chip text-[11px] px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-500 border border-slate-200 dark:border-slate-700 transition" data-query="torque">Torque Specs</button>
+            <button class="quick-chip text-[11px] px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-500 border border-slate-200 dark:border-slate-700 transition" data-query="timing">Timing Belt</button>
+            <button class="quick-chip text-[11px] px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-500 border border-slate-200 dark:border-slate-700 transition" data-query="valve">Valve Clearance</button>
+            <button class="quick-chip text-[11px] px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-500 border border-slate-200 dark:border-slate-700 transition" data-query="wiring">ECU Pinout</button>
+            <button class="quick-chip text-[11px] px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-blue-500/10 hover:text-blue-500 border border-slate-200 dark:border-slate-700 transition" data-query="piston">Piston Ring</button>
+          </div>
+          <div id="searchResultsList" class="space-y-2"></div>
+        </div>
+
+        <!-- TAB 4: BOOKMARKED / PINNED PAGES -->
+        <div id="tab-pins" class="hidden space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-500 dark:text-slate-400">Saved Workshop Pins</span>
+            <button id="addPinFromTabBtn" class="text-xs px-2 py-1 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 font-medium transition">+ Pin Current</button>
+          </div>
+          <div id="pinnedPagesList" class="space-y-2"></div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- CENTER: MAIN VIEWER + TOOLBAR -->
+    <main class="flex-1 flex flex-col min-w-0 bg-slate-200/70 dark:bg-slate-950 blueprint-grid relative">
+      
+      <!-- MAIN VIEWER TOOLBAR -->
+      <div class="h-12 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-3 flex items-center justify-between gap-2 shrink-0 overflow-x-auto">
+        
+        <!-- Page Navigation -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="prevPageBtn" title="Previous Page (Left Arrow)" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div class="flex items-center gap-1 text-xs font-mono">
+            <input id="pageNumberInput" type="number" min="1" value="1" class="w-12 text-center py-1 rounded bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            <span class="text-slate-400">/</span>
+            <span id="totalPagesLabel" class="text-slate-600 dark:text-slate-300 font-semibold">1</span>
+          </div>
+          <button id="nextPageBtn" title="Next Page (Right Arrow)" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Zoom Controls -->
+        <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 shrink-0">
+          <button id="zoomOutBtn" title="Zoom Out (-)" class="p-1 rounded hover:bg-white dark:hover:bg-slate-700 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4" />
+            </svg>
+          </button>
+          <select id="zoomPresetSelect" class="text-xs font-mono bg-transparent px-1.5 py-0.5 focus:outline-none cursor-pointer">
+            <option value="fit-width">Fit Width</option>
+            <option value="fit-page">Fit Page</option>
+            <option value="0.75">75%</option>
+            <option value="1.0" selected>100%</option>
+            <option value="1.25">125%</option>
+            <option value="1.5">150%</option>
+            <option value="2.0">200%</option>
+            <option value="2.5">250%</option>
+          </select>
+          <button id="zoomInBtn" title="Zoom In (+)" class="p-1 rounded hover:bg-white dark:hover:bg-slate-700 transition">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Rotation & Pin Actions -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="rotateCCWBtn" title="Rotate 90° Counter-Clockwise" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+            </svg>
+          </button>
+          <button id="rotateCWBtn" title="Rotate 90° Clockwise (For Wiring Diagrams)" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 10H11a8 8 0 00-8 8v2m18-10l-6 6m6-6l-6-6" />
+            </svg>
+          </button>
+
+          <div class="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-0.5"></div>
+
+          <button id="pinCurrentPageBtn" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-xs font-medium transition">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+            </svg>
+            <span class="hidden sm:inline">Pin Page</span>
+          </button>
+
+          <button id="sendToSplitBtn" title="Open Current Page in Side-by-Side Reference Pane" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-medium transition">
+            <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            <span class="hidden md:inline">Pin Side-by-Side</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ACTIVE SEARCH MATCH BAR (Appears when jumping from search) -->
+      <div id="activeMatchBar" class="hidden bg-amber-500/15 border-b border-amber-500/30 px-4 py-1.5 text-xs flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2 truncate">
+          <span class="px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-mono font-bold text-[10px]">MATCH</span>
+          <span id="activeMatchInfo" class="text-amber-800 dark:text-amber-200 truncate">Highlighting matches for "..."</span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="prevMatchResultBtn" class="px-2 py-0.5 rounded bg-white/80 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 text-xs font-medium">Prev Match</button>
+          <button id="nextMatchResultBtn" class="px-2 py-0.5 rounded bg-white/80 dark:bg-slate-800 hover:bg-white dark:hover:bg-slate-700 text-xs font-medium">Next Match</button>
+          <button id="closeMatchBarBtn" class="p-1 text-slate-500 hover:text-slate-800 dark:hover:text-white">✕</button>
+        </div>
+      </div>
+
+      <!-- VIEWPORT AREA: PRIMARY DOCUMENT + OPTIONAL SPLIT REFERENCE PANE -->
+      <div class="flex-1 flex min-h-0 overflow-hidden">
+        
+        <!-- Primary Document Canvas Scroll Container -->
+        <div id="primaryViewport" class="flex-1 overflow-auto p-4 sm:p-6 flex justify-center items-start relative">
+          <div id="canvasWrapper" class="relative shadow-2xl rounded-lg overflow-hidden bg-white transition-transform duration-150 border border-slate-300 dark:border-slate-700">
+            <canvas id="pdfCanvas" class="block"></canvas>
+            <!-- Overlay layer for search term bounding boxes -->
+            <div id="highlightOverlay" class="absolute inset-0 pointer-events-none"></div>
+          </div>
+
+          <!-- Dropzone Overlay when dragging files -->
+          <div id="dragDropOverlay" class="hidden fixed inset-0 bg-blue-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-6 pointer-events-none">
+            <div class="border-2 border-dashed border-blue-400 rounded-2xl p-10 text-center max-w-md bg-slate-900/90 text-white shadow-2xl">
+              <svg class="w-12 h-12 text-blue-400 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <h3 class="text-lg font-bold mb-1">Drop Workshop PDF Manuals Here</h3>
+              <p class="text-xs text-slate-300">Instant multi-manual text indexing & high-resolution CAD diagram rendering</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT SPLIT REFERENCE PANE (Side-by-side torque specs / wiring diagram) -->
+        <aside id="splitReferencePane" class="hidden w-full md:w-[44%] max-w-2xl bg-white dark:bg-slate-900 border-l border-slate-300 dark:border-slate-700 flex flex-col shrink-0 z-10 shadow-xl">
+          <div class="h-11 px-3 bg-slate-100 dark:bg-slate-800/90 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2 shrink-0">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-mono text-[10px] font-bold">PINNED REF</span>
+              <span id="splitRefTitle" class="text-xs font-semibold truncate">Torque & Service Specs (Page 6)</span>
+            </div>
+            <div class="flex items-center gap-1 shrink-0">
+              <button id="splitZoomOutBtn" title="Zoom Out Reference" class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-mono">−</button>
+              <button id="splitZoomInBtn" title="Zoom In Reference" class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-mono">+</button>
+              <button id="closeSplitRefBtn" title="Close Reference Pane" class="p-1 rounded hover:bg-red-500/20 text-slate-500 hover:text-red-500 ml-1">✕</button>
+            </div>
+          </div>
+          <!-- Quick Reference Switcher Pills -->
+          <div class="px-3 py-1.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto shrink-0 text-[11px]">
+            <span class="text-slate-400 shrink-0">Quick Jump:</span>
+            <button class="split-preset-btn px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 font-medium shrink-0" data-sample-page="6">Torque Table</button>
+            <button class="split-preset-btn px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 font-medium shrink-0" data-sample-page="3">Timing Marks</button>
+            <button class="split-preset-btn px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 font-medium shrink-0" data-sample-page="5">ECU Pinout</button>
+          </div>
+          <div id="splitViewport" class="flex-1 overflow-auto p-4 bg-slate-200/60 dark:bg-slate-950 flex justify-center items-start">
+            <div class="shadow-lg rounded overflow-hidden bg-white border border-slate-300 dark:border-slate-700">
+              <canvas id="splitPdfCanvas" class="block"></canvas>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD BOOKMARK / WORKSHOP NOTE -->
+  <div id="pinModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl max-w-md w-full p-5 shadow-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-base flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+          <span>Pin Page with Workshop Note</span>
+        </h3>
+        <button id="closePinModalBtn" class="text-slate-400 hover:text-slate-200">✕</button>
+      </div>
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Manual & Page</label>
+          <div id="pinModalPageLabel" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 font-mono text-xs"></div>
+        </div>
+        <div>
+          <label for="pinNoteInput" class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Workshop Note / Label</label>
+          <input id="pinNoteInput" type="text" placeholder="e.g., Head bolt torque sequence 54 Nm" class="w-full px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="cancelPinBtn" class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+          <button id="savePinBtn" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs shadow">Save Pin</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    /**
+     * AutoSpec — Technical Workshop Manual Viewer & Instant Search
+     * Supports both real multi-page PDF documents (via PDF.js) and a built-in
+     * rich interactive sample manual ("Daihatsu 660cc EF Engine Workshop Manual")
+     * with CAD-style technical diagrams, full-text search, TOC, thumbnails,
+     * rotation, zoom presets, persistent workshop pins, and split reference pane.
+     */
+
+    // Configure PDF.js Worker reliably via cdnjs
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // =========================================================================
+    // 1. BUILT-IN SAMPLE MANUAL DATA (Daihatsu 660cc EF-EL / EF-VE / EF-DET)
+    // =========================================================================
+    const SAMPLE_MANUAL_ID = 'sample-daihatsu-ef-660';
+
+    const SAMPLE_MANUAL_PAGES = [
+      {
+        pageNum: 1,
+        section: '1. General Information & Engine Specs',
+        title: 'DAIHATSU 660cc EF-SERIES ENGINE — GENERAL SPECIFICATIONS',
+        text: `DAIHATSU MOTOR CO., LTD. WORKSHOP SERVICE MANUAL
+ENGINE SERIES: EF-CL (6V Carb) / EF-EL (6V EFI) / EF-VE (12V DOHC DVVT) / EF-DET (12V Turbo)
+MODELS: Mira L200 / L500 / L700, Cuore, Hijet S200P / S320V, Move L900, Perodua Kancil
+DISPLACEMENT: 659 cc (0.659 Liters) | CONFIGURATION: Inline 3-Cylinder Transverse
+BORE x STROKE: 68.0 mm x 60.5 mm | COMPRESSION RATIO: 9.5:1 (NA) / 8.5:1 (EF-DET Turbo)
+FIRING ORDER: 1 - 3 - 2 (Cylinder #1 at Timing Belt Front End)
+IDLE SPEED: 850 ± 50 rpm (Manual) / 900 ± 50 rpm (Automatic)
+IGNITION TIMING: 5° ± 2° BTDC @ 850 rpm (Service connector bridged)
+ENGINE OIL CAPACITY: 2.7 Liters (with oil filter replacement), SAE 10W-30 or 5W-30 API SG/SJ
+COOLANT CAPACITY: 3.8 Liters (including reservoir tank), Ethylene Glycol 50/50 mix`,
+        diagramType: 'overview'
+      },
+      {
+        pageNum: 2,
+        section: '2. Cylinder Head & Valve Train',
+        title: 'CYLINDER HEAD DISASSEMBLY & VALVE CLEARANCE INSPECTION',
+        text: `SECTION EM-12: CYLINDER HEAD & VALVE TRAIN (SOHC 6-VALVE & DOHC 12-VALVE)
+1. Disconnect negative battery terminal and drain engine coolant completely.
+2. Remove air cleaner assembly, throttle body / carburetor, and intake manifold stays.
+3. Loosen cylinder head bolts in 3 progressive passes from outer ends toward center to prevent warpage.
+4. CYLINDER HEAD BOLT TIGHTENING SEQUENCE: Tighten from center outward (1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8) in two stages: Stage 1: 29 Nm (3.0 kgf-m), Stage 2: 54 - 59 Nm (5.5 - 6.0 kgf-m).
+5. CYLINDER HEAD FLATNESS LIMIT: Maximum warpage 0.05 mm (0.0020 in) across block deck and manifold faces.
+6. VALVE CLEARANCE (COLD ENGINE 20°C):
+   - Intake Valve Lash (EF-CL / EF-EL): 0.18 ± 0.03 mm (0.007 in)
+   - Exhaust Valve Lash (EF-CL / EF-EL): 0.25 ± 0.03 mm (0.0010 in)
+   - EF-VE / EF-DET Bucket Lifter Clearance: Intake 0.15 - 0.21 mm | Exhaust 0.24 - 0.30 mm
+7. VALVE SPRING FREE LENGTH: Standard 44.2 mm | Service Limit 42.5 mm.`,
+        diagramType: 'head'
+      },
+      {
+        pageNum: 3,
+        section: '3. Timing Belt & Alignment Marks',
+        title: 'TIMING BELT INSTALLATION & TDC ALIGNMENT MARKS',
+        text: `SECTION EM-24: TIMING BELT, TENSIONER & WATER PUMP REPLACEMENT
+CRITICAL WARNING: The Daihatsu EF-VE and EF-DET DOHC engines are interference designs. Never rotate crankshaft or camshaft independently with timing belt removed.
+1. Rotate crankshaft pulley clockwise until Cylinder #1 is at Top Dead Center (TDC) on compression stroke.
+2. CAMSHAFT PULLEY ALIGNMENT: Align the punched dot / "UP" mark on the camshaft sprocket with the V-notch indicator cast into the upper cylinder head cover backing plate.
+3. CRANKSHAFT PULLEY ALIGNMENT: Align the crankshaft timing gear keyway / dot mark with the pointer embossed on the oil pump body housing.
+4. TENSIONER PULLEY INSTALLATION: Install new timing belt counterclockwise starting at crankshaft sprocket -> water pump -> camshaft sprocket -> tensioner pulley.
+5. TIMING BELT DEFLECTION: Apply 98 N (10 kgf) thumb pressure midway between camshaft and water pump; deflection must be 9.0 - 11.0 mm.
+6. TENSIONER LOCK BOLT TORQUE: 37 Nm (3.8 kgf-m). Rotate crank 2 full turns clockwise and re-verify TDC alignment marks.`,
+        diagramType: 'timing'
+      },
+      {
+        pageNum: 4,
+        section: '4. Cylinder Block, Pistons & Crankshaft',
+        title: 'PISTON RINGS, CONNECTING RODS & CRANKSHAFT BEARINGS',
+        text: `SECTION EM-38: BOTTOM END — PISTON, RING END GAP & CRANKSHAFT CLEARANCE
+1. CYLINDER BORE DIAMETER: Standard 68.000 - 68.030 mm | Maximum Taper / Out-of-Round Limit: 0.05 mm.
+2. PISTON-TO-CYLINDER WALL CLEARANCE: 0.025 - 0.045 mm (measured 15 mm from bottom of piston skirt).
+3. PISTON RING END GAP (Installed at bottom of ring travel):
+   - Top Compression Ring (#1): Standard 0.20 - 0.35 mm | Limit 0.80 mm
+   - Second Compression Ring (#2): Standard 0.35 - 0.50 mm | Limit 0.95 mm
+   - Oil Control Ring Side Rail: Standard 0.20 - 0.70 mm | Limit 1.10 mm
+   * Position ring gaps 120° apart; ensure "R" or "T" stamp faces UP toward piston crown.
+4. CONNECTING ROD BIG-END OIL CLEARANCE (Plastigage): Standard 0.020 - 0.044 mm | Limit 0.08 mm.
+5. CONNECTING ROD CAP NUT TORQUE: 25 - 29 Nm (2.5 - 3.0 kgf-m).
+6. CRANKSHAFT MAIN JOURNAL OIL CLEARANCE: Standard 0.020 - 0.042 mm | Limit 0.08 mm.
+7. CRANKSHAFT THRUST END PLAY: Standard 0.04 - 0.24 mm | Limit 0.30 mm.
+8. MAIN BEARING CAP BOLT TORQUE: 44 - 49 Nm (4.5 - 5.0 kgf-m).`,
+        diagramType: 'bottom'
+      },
+      {
+        pageNum: 5,
+        section: '5. EFI System & ECU Wiring Pinout',
+        title: 'EF-EL / EF-VE ENGINE CONTROL UNIT (ECU) PINOUT & SENSORS',
+        text: `SECTION FI-08: ELECTRONIC FUEL INJECTION (EFI) & ECU CONNECTOR PINOUT
+ECU CONNECTOR A (26-PIN) & CONNECTOR B (16-PIN) — HARNESS SIDE VIEW:
+- Pin A1 (+B / +B1): Main EFI Relay Switched 12V Power (Black/Red)
+- Pin A2 (E1): Engine Ground — Intake Manifold Earth Bolt (Brown)
+- Pin A5 (NE+): Crankshaft Position Sensor Signal (24-tooth reluctor, White)
+- Pin A6 (G1): Camshaft Position Sensor TDC Reference (Blue)
+- Pin A10 (PIM): Manifold Absolute Pressure (MAP) Sensor Signal (1.2V @ idle, 3.9V @ WOT)
+- Pin A12 (THW): Engine Coolant Temperature (ECT) Sensor (2.2 - 2.7 kΩ @ 20°C / 0.28 - 0.36 kΩ @ 80°C)
+- Pin A14 (VTA): Throttle Position Sensor (TPS) Linear Output (0.45V closed -> 4.3V WOT)
+- Pin B1 (#10): Fuel Injector Cylinder #1 Driver (13.8 Ω coil resistance)
+- Pin B2 (#20): Fuel Injector Cylinder #2 Driver (13.8 Ω coil resistance)
+- Pin B3 (#30): Fuel Injector Cylinder #3 Driver (13.8 Ω coil resistance)
+- Pin B7 (IGT1 / IGT2 / IGT3): Direct Ignition Coil Trigger Signals (5V square wave)
+- Pin B12 (OX): Heated Oxygen Sensor (O2) Feedback (0.1V - 0.9V oscillating @ closed loop)
+FUEL RAIL REGULATED PRESSURE: 270 - 310 kPa (2.75 - 3.15 kgf/cm² / 39 - 45 psi).`,
+        diagramType: 'wiring'
+      },
+      {
+        pageNum: 6,
+        section: '6. Master Torque Specifications Table',
+        title: 'FASTENER TIGHTENING TORQUE SPECIFICATIONS QUICK REFERENCE',
+        text: `SECTION SR-02: MASTER ENGINE FASTENER TORQUE SPECIFICATIONS
+- Cylinder Head Bolts (10 mm): 54 - 59 Nm (5.5 - 6.0 kgf-m / 40 - 43 ft-lbf)
+- Main Bearing Cap Bolts: 44 - 49 Nm (4.5 - 5.0 kgf-m / 33 - 36 ft-lbf)
+- Connecting Rod Cap Nuts: 25 - 29 Nm (2.5 - 3.0 kgf-m / 18 - 22 ft-lbf)
+- Crankshaft Pulley Center Bolt: 98 - 118 Nm (10.0 - 12.0 kgf-m / 72 - 87 ft-lbf)
+- Camshaft Sprocket Bolt: 44 - 54 Nm (4.5 - 5.5 kgf-m / 33 - 40 ft-lbf)
+- Flywheel / Driveplate Bolts: 54 - 64 Nm (5.5 - 6.5 kgf-m / 40 - 47 ft-lbf)
+- Timing Belt Tensioner Bolt: 37 Nm (3.8 kgf-m / 27 ft-lbf)
+- Water Pump Mounting Bolts: 18 - 22 Nm (1.8 - 2.2 kgf-m / 13 - 16 ft-lbf)
+- Oil Pump Housing Bolts: 18 - 22 Nm (1.8 - 2.2 kgf-m / 13 - 16 ft-lbf)
+- Oil Pan Drain Plug: 29 - 39 Nm (3.0 - 4.0 kgf-m / 22 - 29 ft-lbf)
+- Intake Manifold Nuts / Bolts: 18 - 22 Nm (1.8 - 2.2 kgf-m / 13 - 16 ft-lbf)
+- Exhaust Manifold Nuts: 25 - 30 Nm (2.5 - 3.1 kgf-m / 18 - 22 ft-lbf)
+- Spark Plugs (14mm NGK BKR6E): 18 - 25 Nm (1.8 - 2.5 kgf-m / 13 - 18 ft-lbf)`,
+        diagramType: 'torque'
+      }
+    ];
+
+    // =========================================================================
+    // 2. APPLICATION STATE
+    // =========================================================================
+    const state = {
+      manuals: [], // Array of Manual objects
+      activeManualId: null,
+      currentPage: 1,
+      zoomMode: '1.0', // 'fit-width', 'fit-page', or numeric string
+      scale: 1.0,
+      rotation: 0, // 0, 90, 180, 270
+      searchQuery: '',
+      searchResults: [],
+      activeSearchResultIndex: -1,
+      pins: [], // Loaded from localStorage
+      splitPaneOpen: false,
+      splitManualId: null,
+      splitPage: 6,
+      splitScale: 0.78,
+      renderTask: null,
+      splitRenderTask: null
+    };
+
+    // =========================================================================
+    // 3. DOM REFERENCES
+    // =========================================================================
+    const el = {
+      toggleSidebarBtn: document.getElementById('toggleSidebarBtn'),
+      leftSidebar: document.getElementById('leftSidebar'),
+      activeManualSubtitle: document.getElementById('activeManualSubtitle'),
+      globalSearchInput: document.getElementById('globalSearchInput'),
+      clearSearchBtn: document.getElementById('clearSearchBtn'),
+      searchBadgeCount: document.getElementById('searchBadgeCount'),
+      pdfUploadInput: document.getElementById('pdfUploadInput'),
+      toggleSplitRefBtn: document.getElementById('toggleSplitRefBtn'),
+      themeToggleBtn: document.getElementById('themeToggleBtn'),
+      indexingBanner: document.getElementById('indexingBanner'),
+      indexingStatusText: document.getElementById('indexingStatusText'),
+      indexingProgressBar: document.getElementById('indexingProgressBar'),
+      indexingPercentText: document.getElementById('indexingPercentText'),
+      manualCountBadge: document.getElementById('manualCountBadge'),
+      manualSelector: document.getElementById('manualSelector'),
+      sidebarTabs: document.querySelectorAll('.sidebar-tab'),
+      tocListContainer: document.getElementById('tocListContainer'),
+      tocSourceBadge: document.getElementById('tocSourceBadge'),
+      thumbnailsGrid: document.getElementById('thumbnailsGrid'),
+      tabSearchDot: document.getElementById('tabSearchDot'),
+      searchAllManualsCheckbox: document.getElementById('searchAllManualsCheckbox'),
+      searchSummaryLabel: document.getElementById('searchSummaryLabel'),
+      searchResultsList: document.getElementById('searchResultsList'),
+      pinCountBadge: document.getElementById('pinCountBadge'),
+      pinnedPagesList: document.getElementById('pinnedPagesList'),
+      addPinFromTabBtn: document.getElementById('addPinFromTabBtn'),
+      prevPageBtn: document.getElementById('prevPageBtn'),
+      nextPageBtn: document.getElementById('nextPageBtn'),
+      pageNumberInput: document.getElementById('pageNumberInput'),
+      totalPagesLabel: document.getElementById('totalPagesLabel'),
+      zoomOutBtn: document.getElementById('zoomOutBtn'),
+      zoomInBtn: document.getElementById('zoomInBtn'),
+      zoomPresetSelect: document.getElementById('zoomPresetSelect'),
+      rotateCCWBtn: document.getElementById('rotateCCWBtn'),
+      rotateCWBtn: document.getElementById('rotateCWBtn'),
+      pinCurrentPageBtn: document.getElementById('pinCurrentPageBtn'),
+      sendToSplitBtn: document.getElementById('sendToSplitBtn'),
+      activeMatchBar: document.getElementById('activeMatchBar'),
+      activeMatchInfo: document.getElementById('activeMatchInfo'),
+      prevMatchResultBtn: document.getElementById('prevMatchResultBtn'),
+      nextMatchResultBtn: document.getElementById('nextMatchResultBtn'),
+      closeMatchBarBtn: document.getElementById('closeMatchBarBtn'),
+      primaryViewport: document.getElementById('primaryViewport'),
+      canvasWrapper: document.getElementById('canvasWrapper'),
+      pdfCanvas: document.getElementById('pdfCanvas'),
+      highlightOverlay: document.getElementById('highlightOverlay'),
+      dragDropOverlay: document.getElementById('dragDropOverlay'),
+      splitReferencePane: document.getElementById('splitReferencePane'),
+      splitRefTitle: document.getElementById('splitRefTitle'),
+      splitZoomOutBtn: document.getElementById('splitZoomOutBtn'),
+      splitZoomInBtn: document.getElementById('splitZoomInBtn'),
+      closeSplitRefBtn: document.getElementById('closeSplitRefBtn'),
+      splitPdfCanvas: document.getElementById('splitPdfCanvas'),
+      pinModal: document.getElementById('pinModal'),
+      closePinModalBtn: document.getElementById('closePinModalBtn'),
+      pinModalPageLabel: document.getElementById('pinModalPageLabel'),
+      pinNoteInput: document.getElementById('pinNoteInput'),
+      cancelPinBtn: document.getElementById('cancelPinBtn'),
+      savePinBtn: document.getElementById('savePinBtn'),
+      toastContainer: document.getElementById('toastContainer')
+    };
+
+    // =========================================================================
+    // 4. UTILITY FUNCTIONS (Toast, Escape HTML, LocalStorage Pins)
+    // =========================================================================
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      const colors = {
+        info: 'bg-slate-900 text-white border-slate-700',
+        success: 'bg-emerald-950 text-emerald-100 border-emerald-700',
+        warning: 'bg-amber-950 text-amber-100 border-amber-700',
+        error: 'bg-red-950 text-red-100 border-red-700'
+      };
+      toast.className = `px-3.5 py-2.5 rounded-lg border shadow-xl text-xs font-medium flex items-center gap-2 transition-all duration-200 ${colors[type] || colors.info}`;
+      toast.textContent = message;
+      el.toastContainer.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(6px)';
+        setTimeout(() => toast.remove(), 220);
+      }, 3200);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function loadPinsFromStorage() {
+      try {
+        const raw = localStorage.getItem('autospec_workshop_pins_v1');
+        if (raw) {
+          state.pins = JSON.parse(raw);
+        } else {
+          // Default helpful workshop pin on sample manual
+          state.pins = [
+            {
+              id: 'default-pin-1',
+              manualId: SAMPLE_MANUAL_ID,
+              manualTitle: 'Daihatsu 660cc EF Engine Workshop Manual (Sample)',
+              page: 3,
+              note: 'Timing Belt & TDC Pulley Alignment Marks'
+            },
+            {
+              id: 'default-pin-2',
+              manualId: SAMPLE_MANUAL_ID,
+              manualTitle: 'Daihatsu 660cc EF Engine Workshop Manual (Sample)',
+              page: 6,
+              note: 'Cylinder Head & Bottom End Torque Specs'
+            }
+          ];
+        }
+      } catch (e) {
+        state.pins = [];
+      }
+      renderPinsList();
+    }
+
+    function savePinsToStorage() {
+      try {
+        localStorage.setItem('autospec_workshop_pins_v1', JSON.stringify(state.pins));
+      } catch (e) {
+        console.warn('Unable to save pins to localStorage', e);
+      }
+      renderPinsList();
+    }
+
+    // =========================================================================
+    // 5. SAMPLE MANUAL CANVAS RENDERER (Crisp Technical Blueprint Pages)
+    // =========================================================================
+    function renderSampleManualPageToCanvas(canvas, pageNum, scale = 1.0, rotation = 0, highlightQuery = '') {
+      const pageData = SAMPLE_MANUAL_PAGES[pageNum - 1] || SAMPLE_MANUAL_PAGES[0];
+      const baseWidth = 794; // A4 proportion @ 96 DPI
+      const baseHeight = 1123;
+
+      const isRotatedSideways = rotation === 90 || rotation === 270;
+      const targetW = Math.round((isRotatedSideways ? baseHeight : baseWidth) * scale);
+      const targetH = Math.round((isRotatedSideways ? baseWidth : baseHeight) * scale);
+
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = targetW * dpr;
+      canvas.height = targetH * dpr;
+      canvas.style.width = `${targetW}px`;
+      canvas.style.height = `${targetH}px`;
+
+      const ctx = canvas.getContext('2d');
+      ctx.save();
+      ctx.scale(dpr * scale, dpr * scale);
+
+      // Apply rotation around center
+      if (rotation !== 0) {
+        ctx.translate(
+          isRotatedSideways ? baseHeight / 2 : baseWidth / 2,
+          isRotatedSideways ? baseWidth / 2 : baseHeight / 2
+        );
+        ctx.rotate((rotation * Math.PI) / 180);
+        ctx.translate(-baseWidth / 2, -baseHeight / 2);
+      }
+
+      // Paper background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+      // Engineering border frame
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(28, 28, baseWidth - 56, baseHeight - 56);
+
+      // Header Banner
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(28, 28, baseWidth - 56, 56);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 11px "JetBrains Mono", monospace';
+      ctx.fillText(`DAIHATSU MOTOR CO., LTD.  |  ${pageData.section.toUpperCase()}`, 44, 50);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px "Inter", sans-serif';
+      ctx.fillText(pageData.title, 44, 71);
+
+      // Page number badge
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(baseWidth - 115, 38, 72, 34);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 12px "JetBrains Mono", monospace';
+      ctx.fillText(`PAGE ${pageData.pageNum}/6`, baseWidth - 104, 59);
+
+      // Technical Schematic Box (Top half of page)
+      const diagX = 44;
+      const diagY = 102;
+      const diagW = baseWidth - 88;
+      const diagH = 330;
+
+      ctx.fillStyle = '#0b192c';
+      ctx.fillRect(diagX, diagY, diagW, diagH);
+
+      // Blueprint grid inside diagram box
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.14)';
+      ctx.lineWidth = 1;
+      for (let gx = diagX; gx <= diagX + diagW; gx += 22) {
+        ctx.beginPath();
+        ctx.moveTo(gx, diagY);
+        ctx.lineTo(gx, diagY + diagH);
+        ctx.stroke();
+      }
+      for (let gy = diagY; gy <= diagY + diagH; gy += 22) {
+        ctx.beginPath();
+        ctx.moveTo(diagX, gy);
+        ctx.lineTo(diagX + diagW, gy);
+        ctx.stroke();
+      }
+
+      // Draw specialized technical schematic per page
+      drawSampleTechnicalDiagram(ctx, pageData.diagramType, diagX, diagY, diagW, diagH);
+
+      // Technical Specification Text Section (Lower half of page)
+      let cursorY = diagY + diagH + 34;
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 13px "Inter", sans-serif';
+      ctx.fillText('SERVICE PROCEDURES & FACTORY SPECIFICATIONS', 44, cursorY);
+
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(44, cursorY + 8);
+      ctx.lineTo(baseWidth - 44, cursorY + 8);
+      ctx.stroke();
+
+      cursorY += 30;
+      const lines = pageData.text.split('\n');
+      const queryLower = highlightQuery.trim().toLowerCase();
+
+      lines.forEach((line) => {
+        const isHeading = line.startsWith('SECTION') || line.endsWith(':');
+        ctx.font = isHeading
+          ? 'bold 12px "JetBrains Mono", monospace'
+          : '12px "Inter", sans-serif';
+
+        // Word-wrap long lines cleanly
+        const words = line.split(' ');
+        let currentLine = '';
+        const maxLineW = baseWidth - 96;
+
+        words.forEach((word) => {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          if (ctx.measureText(testLine).width > maxLineW) {
+            drawHighlightedTextLine(ctx, currentLine, 48, cursorY, queryLower, isHeading);
+            cursorY += 20;
+            currentLine = word;
+          } else {
+            currentLine = testLine;
+          }
+        });
+        if (currentLine) {
+          drawHighlightedTextLine(ctx, currentLine, 48, cursorY, queryLower, isHeading);
+          cursorY += 22;
+        }
+      });
+
+      // Footer
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(44, baseHeight - 54);
+      ctx.lineTo(baseWidth - 44, baseHeight - 54);
+      ctx.stroke();
+
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.fillText('PUB. NO. EF660-WSM-SAMPLE  |  USE CALIBRATED TORQUE WRENCHES', 44, baseHeight - 38);
+      ctx.fillText(`SHEET ${pageData.pageNum}`, baseWidth - 92, baseHeight - 38);
+
+      ctx.restore();
+    }
+
+    function drawHighlightedTextLine(ctx, text, x, y, queryLower, isHeading) {
+      if (queryLower && text.toLowerCase().includes(queryLower)) {
+        const lower = text.toLowerCase();
+        let idx = lower.indexOf(queryLower);
+        while (idx !== -1) {
+          const prefix = text.slice(0, idx);
+          const match = text.slice(idx, idx + queryLower.length);
+          const startX = x + ctx.measureText(prefix).width;
+          const matchW = ctx.measureText(match).width;
+
+          ctx.fillStyle = 'rgba(250, 204, 21, 0.55)';
+          ctx.fillRect(startX - 2, y - 12, matchW + 4, 16);
+          idx = lower.indexOf(queryLower, idx + queryLower.length);
+        }
+      }
+      ctx.fillStyle = isHeading ? '#0f172a' : '#1e293b';
+      ctx.fillText(text, x, y);
+    }
+
+    function drawSampleTechnicalDiagram(ctx, type, x, y, w, h) {
+      ctx.save();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.fillStyle = '#e0f2fe';
+      ctx.lineWidth = 2;
+      ctx.font = '11px "JetBrains Mono", monospace';
+
+      if (type === 'overview') {
+        // Inline 3-cylinder block schematic
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('FIG 1-1: DAIHATSU EF 659cc INLINE-3 ARCHITECTURE (TOP VIEW)', x + 18, y + 24);
+        const blockX = x + 160;
+        const blockY = y + 85;
+        ctx.strokeRect(blockX, blockY, 380, 150);
+        for (let i = 0; i < 3; i++) {
+          const cx = blockX + 75 + i * 115;
+          const cy = blockY + 75;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 42, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = '#bae6fd';
+          ctx.fillText(`CYL #${i + 1}`, cx - 22, cy + 4);
+          ctx.fillStyle = '#7dd3fc';
+          ctx.fillText('Ø 68.0mm', cx - 26, cy + 20);
+        }
+        // Timing belt side indicator
+        ctx.strokeStyle = '#facc15';
+        ctx.strokeRect(blockX - 42, blockY + 12, 34, 126);
+        ctx.fillStyle = '#facc15';
+        ctx.fillText('TIMING', blockX - 45, blockY - 4);
+        ctx.fillText('FRONT ->', blockX - 48, blockY + 156);
+        // Flywheel indicator
+        ctx.strokeStyle = '#38bdf8';
+        ctx.strokeRect(blockX + 388, blockY + 10, 22, 130);
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillText('FLYWHEEL / TRANSAXLE', blockX + 340, blockY - 4);
+      } else if (type === 'head') {
+        // Cylinder Head Bolt Tightening Sequence
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('FIG 2-1: CYLINDER HEAD BOLT TORQUE SEQUENCE (8-BOLT PATTERN)', x + 18, y + 24);
+        const hx = x + 140;
+        const hy = y + 85;
+        ctx.strokeRect(hx, hy, 420, 160);
+        // Sequence numbers: center out
+        const bolts = [
+          { bx: hx + 170, by: hy + 35, seq: '3' },
+          { bx: hx + 250, by: hy + 35, seq: '1' },
+          { bx: hx + 90, by: hy + 35, seq: '7' },
+          { bx: hx + 330, by: hy + 35, seq: '5' },
+          { bx: hx + 170, by: hy + 125, seq: '2' },
+          { bx: hx + 250, by: hy + 125, seq: '4' },
+          { bx: hx + 90, by: hy + 125, seq: '6' },
+          { bx: hx + 330, by: hy + 125, seq: '8' }
+        ];
+        bolts.forEach((b) => {
+          ctx.beginPath();
+          ctx.arc(b.bx, b.by, 16, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#facc15';
+          ctx.font = 'bold 13px "JetBrains Mono", monospace';
+          ctx.fillText(b.seq, b.bx - 4, b.by + 5);
+        });
+        ctx.fillStyle = '#bae6fd';
+        ctx.font = '11px "JetBrains Mono", monospace';
+        ctx.fillText('PASS 1: 29 Nm  |  PASS 2: 54 - 59 Nm  |  LOOSEN IN REVERSE (8 -> 1)', hx + 25, hy + 185);
+      } else if (type === 'timing') {
+        // Timing Belt Pulleys & Alignment Marks
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('FIG 3-1: TIMING BELT & TDC ALIGNMENT MARKS (CYLINDER #1 TDC)', x + 18, y + 24);
+        // Cam sprocket
+        const camX = x + 350;
+        const camY = y + 110;
+        ctx.beginPath();
+        ctx.arc(camX, camY, 54, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(camX, camY - 46, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText('CAM TDC MARK (UP)', camX + 66, camY - 40);
+
+        // Crank sprocket
+        const crankX = x + 350;
+        const crankY = y + 255;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(crankX, crankY, 32, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(crankX, crankY - 26, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText('CRANK KEYWAY / OIL PUMP MARK', crankX + 48, crankY - 18);
+
+        // Water pump & tensioner
+        ctx.strokeStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(x + 255, y + 185, 24, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillText('WATER PUMP', x + 165, y + 188);
+
+        ctx.beginPath();
+        ctx.arc(x + 435, y + 195, 20, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillText('TENSIONER (37 Nm)', x + 465, y + 198);
+      } else if (type === 'bottom') {
+        // Piston Ring Gap Orientation
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('FIG 4-1: PISTON RING END-GAP 120° ORIENTATION (TOP VIEW)', x + 18, y + 24);
+        const px = x + 350;
+        const py = y + 175;
+        ctx.beginPath();
+        ctx.arc(px, py, 82, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillText('FRONT MARK (F)', px - 46, py - 92);
+
+        // 120 deg markers
+        const angles = [
+          { deg: -90, label: 'TOP RING (#1) GAP' },
+          { deg: 30, label: '2ND RING (#2) GAP' },
+          { deg: 150, label: 'OIL RAIL GAP' }
+        ];
+        angles.forEach((a) => {
+          const rad = (a.deg * Math.PI) / 180;
+          const lx = px + Math.cos(rad) * 82;
+          const ly = py + Math.sin(rad) * 82;
+          ctx.strokeStyle = '#facc15';
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(lx, ly);
+          ctx.stroke();
+          ctx.fillStyle = '#facc15';
+          ctx.fillText(a.label, lx + (Math.cos(rad) >= 0 ? 10 : -125), ly + 4);
+        });
+      } else if (type === 'wiring') {
+        // ECU Connector Pinout
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('FIG 5-1: ECU CONNECTOR A (26P) & B (16P) TERMINAL LAYOUT', x + 18, y + 24);
+        // Connector A grid
+        const ax = x + 70;
+        const ay = y + 85;
+        ctx.fillStyle = '#bae6fd';
+        ctx.fillText('CONNECTOR A (26-PIN)', ax, ay - 10);
+        for (let r = 0; r < 2; r++) {
+          for (let c = 0; c < 13; c++) {
+            ctx.strokeRect(ax + c * 26, ay + r * 32, 22, 26);
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '9px "JetBrains Mono", monospace';
+            ctx.fillText(`${r * 13 + c + 1}`, ax + c * 26 + 4, ay + r * 32 + 16);
+          }
+        }
+        // Connector B grid
+        const bx = x + 440;
+        const by = y + 85;
+        ctx.fillStyle = '#bae6fd';
+        ctx.font = '11px "JetBrains Mono", monospace';
+        ctx.fillText('CONNECTOR B (16-PIN)', bx, by - 10);
+        for (let r = 0; r < 2; r++) {
+          for (let c = 0; c < 8; c++) {
+            ctx.strokeRect(bx + c * 26, by + r * 32, 22, 26);
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '9px "JetBrains Mono", monospace';
+            ctx.fillText(`${r * 8 + c + 1}`, bx + c * 26 + 4, by + r * 32 + 16);
+          }
+        }
+        ctx.fillStyle = '#facc15';
+        ctx.font = '11px "JetBrains Mono", monospace';
+        ctx.fillText('NOTE: Inspect terminals with back-probe tool. Battery voltage 12.4V - 14.4V.', ax, ay + 125);
+      } else if (type === 'torque') {
+        // Visual Torque Chart
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('FIG 6-1: CRITICAL ENGINE FASTENER TORQUE COMPARISON (Nm)', x + 18, y + 24);
+        const bars = [
+          { name: 'Crank Pulley', val: 118, max: 130 },
+          { name: 'Flywheel', val: 64, max: 130 },
+          { name: 'Cylinder Head', val: 59, max: 130 },
+          { name: 'Cam Sprocket', val: 54, max: 130 },
+          { name: 'Main Caps', val: 49, max: 130 },
+          { name: 'Tensioner', val: 37, max: 130 },
+          { name: 'Con-Rod Nuts', val: 29, max: 130 }
+        ];
+        bars.forEach((b, i) => {
+          const by = y + 52 + i * 36;
+          ctx.fillStyle = '#e0f2fe';
+          ctx.fillText(b.name, x + 36, by + 15);
+          const barW = (b.val / b.max) * 380;
+          ctx.fillStyle = '#0284c7';
+          ctx.fillRect(x + 170, by, barW, 20);
+          ctx.strokeRect(x + 170, by, barW, 20);
+          ctx.fillStyle = '#facc15';
+          ctx.fillText(`${b.val} Nm`, x + 178 + barW, by + 15);
+        });
+      }
+
+      ctx.restore();
+    }
+
+    // =========================================================================
+    // 6. MANUAL INITIALIZATION & MULTI-PDF LOADING / INDEXING
+    // =========================================================================
+    function initSampleManual() {
+      const sampleManual = {
+        id: SAMPLE_MANUAL_ID,
+        title: 'Daihatsu 660cc EF Engine Workshop Manual (Sample)',
+        isSample: true,
+        numPages: SAMPLE_MANUAL_PAGES.length,
+        pdfDoc: null,
+        pagesText: SAMPLE_MANUAL_PAGES.map((p) => ({
+          pageNum: p.pageNum,
+          section: p.section,
+          text: `${p.title}\n${p.text}`
+        })),
+        toc: SAMPLE_MANUAL_PAGES.map((p) => ({
+          title: p.section,
+          page: p.pageNum
+        }))
+      };
+
+      state.manuals.push(sampleManual);
+      state.activeManualId = sampleManual.id;
+      state.splitManualId = sampleManual.id;
+      state.splitPage = 6;
+      updateManualSelectorUI();
+      selectManual(sampleManual.id, 1);
+    }
+
+    async function handlePdfFilesUpload(fileList) {
+      if (!fileList || fileList.length === 0) return;
+      if (!window.pdfjsLib) {
+        showToast('PDF.js library failed to load. Check internet connection.', 'error');
+        return;
+      }
+
+      const files = Array.from(fileList).filter(
+        (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+      );
+
+      if (files.length === 0) {
+        showToast('Please select valid PDF workshop manual files.', 'warning');
+        return;
+      }
+
+      for (const file of files) {
+        try {
+          showIndexingProgress(`Loading "${file.name}"...`, 2);
+          const arrayBuffer = await file.arrayBuffer();
+          const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+          const pdfDoc = await loadingTask.promise;
+
+          const manualId = `pdf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+          const cleanTitle = file.name.replace(/\.pdf$/i, '');
+
+          // Extract text across all pages for instant full-text search
+          const pagesText = [];
+          const detectedHeadings = [];
+          const total = pdfDoc.numPages;
+
+          for (let pageNum = 1; pageNum <= total; pageNum++) {
+            const page = await pdfDoc.getPage(pageNum);
+            const textContent = await page.getTextContent();
+            const strings = textContent.items.map((item) => item.str);
+            const fullText = strings.join(' ').replace(/\s+/g, ' ').trim();
+
+            // Heuristic section title detection from first prominent lines
+            const firstChunk = strings.slice(0, 8).join(' ').trim();
+            const sectionLabel =
+              firstChunk.length > 4 && firstChunk.length < 75
+                ? firstChunk
+                : `Page ${pageNum}`;
+
+            pagesText.push({
+              pageNum,
+              section: sectionLabel,
+              text: fullText
+            });
+
+            // Detect chapter-like headings if no PDF outline exists
+            if (
+              /^(section|chapter|\d+[\.\-]\s+[A-Z]{3,}|[A-Z]{2}-\d+)/i.test(firstChunk) &&
+              detectedHeadings.length < 120
+            ) {
+              detectedHeadings.push({
+                title: firstChunk.slice(0, 60),
+                page: pageNum
+              });
+            }
+
+            if (pageNum % 3 === 0 || pageNum === total) {
+              const pct = Math.round((pageNum / total) * 100);
+              showIndexingProgress(
+                `Indexing "${cleanTitle}" (${pageNum}/${total} pages)...`,
+                pct
+              );
+              // Yield to UI thread so browser remains responsive on 500+ page PDFs
+              await new Promise((r) => setTimeout(r, 0));
+            }
+          }
+
+          // Extract embedded PDF Outline / Bookmarks if available
+          let toc = [];
+          try {
+            const outline = await pdfDoc.getOutline();
+            if (outline && outline.length > 0) {
+              toc = await flattenPdfOutline(pdfDoc, outline);
+            }
+          } catch (outlineErr) {
+            console.warn('Could not parse PDF outline:', outlineErr);
+          }
+
+          if (toc.length === 0) {
+            toc =
+              detectedHeadings.length > 0
+                ? detectedHeadings
+                : pagesText.map((p) => ({
+                    title: `Page ${p.pageNum} — ${p.section.slice(0, 42)}`,
+                    page: p.pageNum
+                  }));
+          }
+
+          const newManual = {
+            id: manualId,
+            title: cleanTitle,
+            isSample: false,
+            numPages: total,
+            pdfDoc,
+            pagesText,
+            toc,
+            hasEmbeddedOutline: Boolean(toc.length > 0 && detectedHeadings.length === 0)
+          };
+
+          state.manuals.push(newManual);
+          updateManualSelectorUI();
+          await selectManual(manualId, 1);
+          showToast(`Indexed "${cleanTitle}" (${total} pages)`, 'success');
+        } catch (err) {
+          console.error('Error loading PDF:', err);
+          showToast(`Failed to open "${file.name}": ${err.message}`, 'error');
+        } finally {
+          hideIndexingProgress();
+        }
+      }
+    }
+
+    async function flattenPdfOutline(pdfDoc, items, depth = 0, acc = []) {
+      for (const item of items) {
+        if (acc.length >= 250) break;
+        let pageNum = 1;
+        try {
+          if (typeof item.dest === 'string') {
+            const dest = await pdfDoc.getDestination(item.dest);
+            if (dest && dest[0]) {
+              pageNum = (await pdfDoc.getPageIndex(dest[0])) + 1;
+            }
+          } else if (Array.isArray(item.dest) && item.dest[0]) {
+            pageNum = (await pdfDoc.getPageIndex(item.dest[0])) + 1;
+          }
+        } catch (e) {
+          pageNum = 1;
+        }
+        acc.push({
+          title: item.title || `Section (Page ${pageNum})`,
+          page: pageNum,
+          depth
+        });
+        if (item.items && item.items.length > 0) {
+          await flattenPdfOutline(pdfDoc, item.items, depth + 1, acc);
+        }
+      }
+      return acc;
+    }
+
+    function showIndexingProgress(text, percent) {
+      el.indexingBanner.classList.remove('hidden');
+      el.indexingStatusText.textContent = text;
+      el.indexingProgressBar.style.width = `${percent}%`;
+      el.indexingPercentText.textContent = `${percent}%`;
+    }
+
+    function hideIndexingProgress() {
+      setTimeout(() => {
+        el.indexingBanner.classList.add('hidden');
+      }, 400);
+    }
+
+    // =========================================================================
+    // 7. MANUAL SELECTION, TOC, THUMBNAILS & PRIMARY PAGE RENDERING
+    // =========================================================================
+    function getActiveManual() {
+      return state.manuals.find((m) => m.id === state.activeManualId) || state.manuals[0];
+    }
+
+    function updateManualSelectorUI() {
+      el.manualCountBadge.textContent = state.manuals.length;
+      el.manualSelector.innerHTML = state.manuals
+        .map(
+          (m) =>
+            `<option value="${m.id}" ${m.id === state.activeManualId ? 'selected' : ''}>${escapeHtml(
+              m.title
+            )} (${m.numPages}p)</option>`
+        )
+        .join('');
+    }
+
+    async function selectManual(manualId, targetPage = 1) {
+      const manual = state.manuals.find((m) => m.id === manualId);
+      if (!manual) return;
+
+      state.activeManualId = manual.id;
+      state.currentPage = Math.max(1, Math.min(targetPage, manual.numPages));
+      state.rotation = 0;
+
+      el.activeManualSubtitle.textContent = manual.title;
+      el.totalPagesLabel.textContent = manual.numPages;
+      el.pageNumberInput.max = manual.numPages;
+      el.pageNumberInput.value = state.currentPage;
+
+      updateManualSelectorUI();
+      renderTOC(manual);
+      renderThumbnailsGrid(manual);
+      await renderCurrentPage();
+
+      if (state.searchQuery.trim()) {
+        runFullTextSearch(state.searchQuery);
+      }
+    }
+
+    function renderTOC(manual) {
+      el.tocSourceBadge.textContent = manual.isSample ? 'Factory Index' : 'Contents';
+      if (!manual.toc || manual.toc.length === 0) {
+        el.tocListContainer.innerHTML =
+          '<div class="text-xs text-slate-400 py-4 text-center">No outline headings found.</div>';
+        return;
+      }
+
+      el.tocListContainer.innerHTML = manual.toc
+        .map((item) => {
+          const isActive = item.page === state.currentPage;
+          const indent = (item.depth || 0) * 12;
+          return `
+            <button
+              data-toc-page="${item.page}"
+              style="padding-left: ${10 + indent}px"
+              class="toc-item-btn w-full text-left pr-2.5 py-2 rounded-lg text-xs flex items-center justify-between gap-2 transition ${
+                isActive
+                  ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                  : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+              }"
+            >
+              <span class="truncate">${escapeHtml(item.title)}</span>
+              <span class="font-mono text-[10px] px-1.5 py-0.5 rounded shrink-0 ${
+                isActive
+                  ? 'bg-blue-800 text-blue-100'
+                  : 'bg-slate-200/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+              }">p.${item.page}</span>
+            </button>
+          `;
+        })
+        .join('');
+
+      el.tocListContainer.querySelectorAll('.toc-item-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const p = parseInt(btn.getAttribute('data-toc-page'), 10);
+          goToPage(p);
+        });
+      });
+    }
+
+    function renderThumbnailsGrid(manual) {
+      const maxThumbs = Math.min(manual.numPages, 80); // Cap initial grid for instant responsiveness
+      let html = '';
+      for (let p = 1; p <= maxThumbs; p++) {
+        const isCurrent = p === state.currentPage;
+        html += `
+          <button
+            data-thumb-page="${p}"
+            class="thumb-card group rounded-lg p-1.5 border text-left transition flex flex-col items-center ${
+              isCurrent
+                ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
+                : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:border-slate-400 dark:hover:border-slate-600'
+            }"
+          >
+            <div class="w-full aspect-[3/4] bg-white rounded overflow-hidden shadow-xs flex items-center justify-center relative">
+              <canvas id="thumb-canvas-${p}" class="max-w-full max-h-full object-contain"></canvas>
+            </div>
+            <span class="mt-1.5 text-[11px] font-mono font-medium ${
+              isCurrent ? 'text-blue-500 font-bold' : 'text-slate-500 dark:text-slate-400'
+            }">Page ${p}</span>
+          </button>
+        `;
+      }
+      if (manual.numPages > maxThumbs) {
+        html += `<div class="col-span-2 text-center text-[11px] text-slate-400 py-2">Showing first ${maxThumbs} of ${manual.numPages} pages. Use Search or Page Input to jump further.</div>`;
+      }
+      el.thumbnailsGrid.innerHTML = html;
+
+      el.thumbnailsGrid.querySelectorAll('.thumb-card').forEach((card) => {
+        card.addEventListener('click', () => {
+          const p = parseInt(card.getAttribute('data-thumb-page'), 10);
+          goToPage(p);
+        });
+      });
+
+      // Render miniature canvases asynchronously
+      renderThumbnailCanvases(manual, maxThumbs);
+    }
+
+    async function renderThumbnailCanvases(manual, count) {
+      for (let p = 1; p <= count; p++) {
+        if (state.activeManualId !== manual.id) return;
+        const c = document.getElementById(`thumb-canvas-${p}`);
+        if (!c) continue;
+        if (manual.isSample) {
+          renderSampleManualPageToCanvas(c, p, 0.16, 0, '');
+        } else if (manual.pdfDoc) {
+          try {
+            const page = await manual.pdfDoc.getPage(p);
+            const viewport = page.getViewport({ scale: 0.22 });
+            c.width = viewport.width;
+            c.height = viewport.height;
+            await page.render({ canvasContext: c.getContext('2d'), viewport }).promise;
+          } catch (e) {
+            // Ignore cancelled thumbnail renders
+          }
+        }
+        if (p % 6 === 0) await new Promise((r) => setTimeout(r, 0));
+      }
+    }
+
+    async function goToPage(pageNum) {
+      const manual = getActiveManual();
+      if (!manual) return;
+      const clamped = Math.max(1, Math.min(pageNum, manual.numPages));
+      state.currentPage = clamped;
+      el.pageNumberInput.value = clamped;
+      updateActiveHighlightsInSidebar();
+      await renderCurrentPage();
+    }
+
+    function updateActiveHighlightsInSidebar() {
+      // Highlight active TOC item
+      el.tocListContainer.querySelectorAll('.toc-item-btn').forEach((btn) => {
+        const p = parseInt(btn.getAttribute('data-toc-page'), 10);
+        if (p === state.currentPage) {
+          btn.classList.add('bg-blue-600', 'text-white', 'font-semibold');
+          btn.classList.remove('text-slate-700', 'dark:text-slate-300');
+        } else {
+          btn.classList.remove('bg-blue-600', 'text-white', 'font-semibold');
+          btn.classList.add('text-slate-700', 'dark:text-slate-300');
+        }
+      });
+
+      // Highlight active Thumbnail
+      el.thumbnailsGrid.querySelectorAll('.thumb-card').forEach((card) => {
+        const p = parseInt(card.getAttribute('data-thumb-page'), 10);
+        if (p === state.currentPage) {
+          card.classList.add('border-blue-500', 'bg-blue-500/10', 'ring-1', 'ring-blue-500');
+        } else {
+          card.classList.remove('border-blue-500', 'bg-blue-500/10', 'ring-1', 'ring-blue-500');
+        }
+      });
+    }
+
+    async function computeEffectiveScale(baseWidth, baseHeight) {
+      if (state.zoomMode === 'fit-width') {
+        const availW = Math.max(280, el.primaryViewport.clientWidth - 48);
+        return availW / baseWidth;
+      }
+      if (state.zoomMode === 'fit-page') {
+        const availW = Math.max(280, el.primaryViewport.clientWidth - 48);
+        const availH = Math.max(300, el.primaryViewport.clientHeight - 48);
+        return Math.min(availW / baseWidth, availH / baseHeight);
+      }
+      return parseFloat(state.zoomMode) || 1.0;
+    }
+
+    async function renderCurrentPage() {
+      const manual = getActiveManual();
+      if (!manual) return;
+
+      el.prevPageBtn.disabled = state.currentPage <= 1;
+      el.nextPageBtn.disabled = state.currentPage >= manual.numPages;
+      el.highlightOverlay.innerHTML = '';
+
+      if (manual.isSample) {
+        const isRotated = state.rotation === 90 || state.rotation === 270;
+        const baseW = isRotated ? 1123 : 794;
+        const baseH = isRotated ? 794 : 1123;
+        const effectiveScale = await computeEffectiveScale(baseW, baseH);
+        state.scale = effectiveScale;
+        renderSampleManualPageToCanvas(
+          el.pdfCanvas,
+          state.currentPage,
+          effectiveScale,
+          state.rotation,
+          state.searchQuery
+        );
+        return;
+      }
+
+      // Render real PDF page via PDF.js
+      if (manual.pdfDoc) {
+        try {
+          if (state.renderTask) {
+            state.renderTask.cancel();
+          }
+          const page = await manual.pdfDoc.getPage(state.currentPage);
+          const unscaledViewport = page.getViewport({ scale: 1.0, rotation: state.rotation });
+          const effectiveScale = await computeEffectiveScale(
+            unscaledViewport.width,
+            unscaledViewport.height
+          );
+          state.scale = effectiveScale;
+
+          const viewport = page.getViewport({
+            scale: effectiveScale,
+            rotation: state.rotation
+          });
+
+          const dpr = window.devicePixelRatio || 1;
+          const canvas = el.pdfCanvas;
+          canvas.width = Math.floor(viewport.width * dpr);
+          canvas.height = Math.floor(viewport.height * dpr);
+          canvas.style.width = `${Math.floor(viewport.width)}px`;
+          canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+          const ctx = canvas.getContext('2d');
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          state.renderTask = page.render({
+            canvasContext: ctx,
+            viewport
+          });
+          await state.renderTask.promise;
+
+          // Render exact bounding box highlights for matching search terms on PDF canvas
+          if (state.searchQuery.trim().length >= 2) {
+            await renderPdfTextHighlights(page, viewport, state.searchQuery.trim());
+          }
+        } catch (err) {
+          if (err && err.name !== 'RenderingCancelledException') {
+            console.error('Page render error:', err);
+          }
+        }
+      }
+    }
+
+    async function renderPdfTextHighlights(page, viewport, query) {
+      try {
+        const textContent = await page.getTextContent();
+        const queryLower = query.toLowerCase();
+        const frag = document.createDocumentFragment();
+
+        textContent.items.forEach((item) => {
+          if (!item.str || !item.str.toLowerCase().includes(queryLower)) return;
+          // Transform PDF coordinates to viewport pixels
+          const tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+          const fontHeight = Math.hypot(tx[2], tx[3]);
+          const itemWidth = item.width * viewport.scale;
+
+          const box = document.createElement('div');
+          box.style.position = 'absolute';
+          box.style.left = `${tx[4]}px`;
+          box.style.top = `${tx[5] - fontHeight}px`;
+          box.style.width = `${Math.max(12, itemWidth)}px`;
+          box.style.height = `${Math.max(12, fontHeight * 1.15)}px`;
+          box.className = 'bg-amber-400/45 border border-amber-500 rounded-xs';
+          frag.appendChild(box);
+        });
+
+        el.highlightOverlay.appendChild(frag);
+      } catch (e) {
+        // Non-critical highlight overlay failure
+      }
+    }
+
+    // =========================================================================
+    // 8. FULL-TEXT INSTANT SEARCH ACROSS ALL PAGES / MANUALS
+    // =========================================================================
+    function runFullTextSearch(rawQuery) {
+      const query = rawQuery.trim();
+      state.searchQuery = query;
+
+      if (!query) {
+        state.searchResults = [];
+        state.activeSearchResultIndex = -1;
+        el.searchBadgeCount.classList.add('hidden');
+        el.clearSearchBtn.classList.add('hidden');
+        el.tabSearchDot.classList.add('hidden');
+        el.activeMatchBar.classList.add('hidden');
+        el.searchSummaryLabel.textContent = 'Type to search';
+        el.searchResultsList.innerHTML = '';
+        renderCurrentPage();
+        return;
+      }
+
+      el.clearSearchBtn.classList.remove('hidden');
+      switchSidebarTab('search');
+
+      const searchAll = el.searchAllManualsCheckbox.checked;
+      const targetManuals = searchAll
+        ? state.manuals
+        : state.manuals.filter((m) => m.id === state.activeManualId);
+
+      const queryLower = query.toLowerCase();
+      const results = [];
+
+      targetManuals.forEach((manual) => {
+        manual.pagesText.forEach((pageObj) => {
+          const textLower = pageObj.text.toLowerCase();
+          let matchPos = textLower.indexOf(queryLower);
+          if (matchPos !== -1) {
+            // Count occurrences on page
+            let count = 0;
+            let searchIdx = 0;
+            while ((searchIdx = textLower.indexOf(queryLower, searchIdx)) !== -1) {
+              count++;
+              searchIdx += queryLower.length;
+            }
+
+            // Build context snippet around first match
+            const snippetStart = Math.max(0, matchPos - 48);
+            const snippetEnd = Math.min(pageObj.text.length, matchPos + query.length + 72);
+            let snippet = pageObj.text.slice(snippetStart, snippetEnd);
+            if (snippetStart > 0) snippet = '...' + snippet;
+            if (snippetEnd < pageObj.text.length) snippet = snippet + '...';
+
+            results.push({
+              manualId: manual.id,
+              manualTitle: manual.title,
+              pageNum: pageObj.pageNum,
+              section: pageObj.section,
+              snippet,
+              matchCount: count
+            });
+          }
+        });
+      });
+
+      state.searchResults = results;
+      el.searchBadgeCount.textContent = results.length;
+      el.searchBadgeCount.classList.remove('hidden');
+      el.tabSearchDot.classList.remove('hidden');
+      el.searchSummaryLabel.textContent = `${results.length} page${results.length === 1 ? '' : 's'}`;
+
+      renderSearchResultsList(results, query);
+      renderCurrentPage();
+    }
+
+    function renderSearchResultsList(results, query) {
+      if (results.length === 0) {
+        el.searchResultsList.innerHTML = `
+          <div class="p-4 text-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-xs text-slate-400">
+            No matches found for "<span class="text-slate-200 font-semibold">${escapeHtml(query)}</span>".
+          </div>
+        `;
+        return;
+      }
+
+      const escapedRegex = new RegExp(
+        `(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`,
+        'gi'
+      );
+
+      el.searchResultsList.innerHTML = results
+        .map((res, idx) => {
+          const highlightedSnippet = escapeHtml(res.snippet).replace(
+            escapedRegex,
+            '<mark class="bg-amber-400 text-slate-950 font-semibold px-0.5 rounded-xs">$1</mark>'
+          );
+
+          return `
+            <button
+              data-result-index="${idx}"
+              class="search-result-card w-full text-left p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 hover:border-blue-500 hover:bg-blue-500/5 transition space-y-1"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-600 text-white">PAGE ${res.pageNum}</span>
+                <span class="text-[10px] font-mono text-amber-500 font-medium">${res.matchCount} match${res.matchCount > 1 ? 'es' : ''}</span>
+              </div>
+              <div class="text-[11px] font-semibold text-slate-800 dark:text-slate-200 truncate">${escapeHtml(res.section)}</div>
+              <div class="text-[10px] text-slate-400 truncate">${escapeHtml(res.manualTitle)}</div>
+              <p class="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 break-words">${highlightedSnippet}</p>
+            </button>
+          `;
+        })
+        .join('');
+
+      el.searchResultsList.querySelectorAll('.search-result-card').forEach((card) => {
+        card.addEventListener('click', () => {
+          const idx = parseInt(card.getAttribute('data-result-index'), 10);
+          jumpToSearchResult(idx);
+        });
+      });
+    }
+
+    async function jumpToSearchResult(index) {
+      if (index < 0 || index >= state.searchResults.length) return;
+      state.activeSearchResultIndex = index;
+      const res = state.searchResults[index];
+
+      if (res.manualId !== state.activeManualId) {
+        await selectManual(res.manualId, res.pageNum);
+      } else {
+        await goToPage(res.pageNum);
+      }
+
+      el.activeMatchBar.classList.remove('hidden');
+      el.activeMatchInfo.textContent = `Match ${index + 1} of ${state.searchResults.length} — Page ${res.pageNum} (${res.section})`;
+    }
+
+    // =========================================================================
+    // 9. BOOKMARKS / WORKSHOP PINS & SPLIT REFERENCE PANE
+    // =========================================================================
+    function openPinModal() {
+      const manual = getActiveManual();
+      if (!manual) return;
+      el.pinModalPageLabel.textContent = `${manual.title} — Page ${state.currentPage}`;
+      el.pinNoteInput.value = '';
+      el.pinModal.classList.remove('hidden');
+      setTimeout(() => el.pinNoteInput.focus(), 50);
+    }
+
+    function closePinModal() {
+      el.pinModal.classList.add('hidden');
+    }
+
+    function saveCurrentPagePin() {
+      const manual = getActiveManual();
+      if (!manual) return;
+      const noteText =
+        el.pinNoteInput.value.trim() || `Page ${state.currentPage} Reference`;
+
+      state.pins.unshift({
+        id: `pin-${Date.now()}`,
+        manualId: manual.id,
+        manualTitle: manual.title,
+        page: state.currentPage,
+        note: noteText
+      });
+
+      savePinsToStorage();
+      closePinModal();
+      switchSidebarTab('pins');
+      showToast(`Pinned Page ${state.currentPage}: "${noteText}"`, 'success');
+    }
+
+    function renderPinsList() {
+      el.pinCountBadge.textContent = state.pins.length;
+      if (state.pins.length === 0) {
+        el.pinnedPagesList.innerHTML =
+          '<div class="text-xs text-slate-400 text-center py-6 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg">No pinned pages yet. Click "Pin Page" in the toolbar to save torque specs or wiring pages.</div>';
+        return;
+      }
+
+      el.pinnedPagesList.innerHTML = state.pins
+        .map(
+          (pin) => `
+          <div class="p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 space-y-1.5">
+            <div class="flex items-start justify-between gap-2">
+              <button data-jump-pin="${pin.id}" class="text-left flex-1 min-w-0 group">
+                <div class="text-xs font-semibold text-amber-600 dark:text-amber-400 group-hover:underline truncate">${escapeHtml(pin.note)}</div>
+                <div class="text-[10px] text-slate-400 truncate">${escapeHtml(pin.manualTitle)} • Page ${pin.page}</div>
+              </button>
+              <button data-del-pin="${pin.id}" title="Remove Pin" class="text-slate-400 hover:text-red-400 text-xs px-1">✕</button>
+            </div>
+            <div class="flex items-center gap-1.5 pt-1">
+              <button data-jump-pin="${pin.id}" class="text-[10px] px-2 py-0.5 rounded bg-blue-600/15 text-blue-600 dark:text-blue-400 hover:bg-blue-600/25 font-medium">Open Page</button>
+              <button data-split-pin="${pin.id}" class="text-[10px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 font-medium">Open Side-by-Side</button>
+            </div>
+          </div>
+        `
+        )
+        .join('');
+
+      el.pinnedPagesList.querySelectorAll('[data-jump-pin]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const pin = state.pins.find((p) => p.id === btn.getAttribute('data-jump-pin'));
+          if (!pin) return;
+          const exists = state.manuals.some((m) => m.id === pin.manualId);
+          if (!exists) {
+            showToast('Re-upload this PDF manual to jump to its pinned page.', 'warning');
+            return;
+          }
+          await selectManual(pin.manualId, pin.page);
+        });
+      });
+
+      el.pinnedPagesList.querySelectorAll('[data-split-pin]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const pin = state.pins.find((p) => p.id === btn.getAttribute('data-split-pin'));
+          if (!pin) return;
+          const exists = state.manuals.some((m) => m.id === pin.manualId);
+          if (!exists) {
+            showToast('Re-upload this PDF manual first.', 'warning');
+            return;
+          }
+          openSplitReference(pin.manualId, pin.page, pin.note);
+        });
+      });
+
+      el.pinnedPagesList.querySelectorAll('[data-del-pin]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-del-pin');
+          state.pins = state.pins.filter((p) => p.id !== id);
+          savePinsToStorage();
+        });
+      });
+    }
+
+    async function openSplitReference(manualId, pageNum, customLabel = '') {
+      const manual = state.manuals.find((m) => m.id === manualId) || getActiveManual();
+      if (!manual) return;
+
+      state.splitPaneOpen = true;
+      state.splitManualId = manual.id;
+      state.splitPage = Math.max(1, Math.min(pageNum, manual.numPages));
+
+      el.splitReferencePane.classList.remove('hidden');
+      el.splitRefTitle.textContent = customLabel
+        ? `${customLabel} (p.${state.splitPage})`
+        : `${manual.title} — Page ${state.splitPage}`;
+
+      await renderSplitReferenceCanvas();
+    }
+
+    async function renderSplitReferenceCanvas() {
+      if (!state.splitPaneOpen) return;
+      const manual =
+        state.manuals.find((m) => m.id === state.splitManualId) || getActiveManual();
+      if (!manual) return;
+
+      if (manual.isSample) {
+        renderSampleManualPageToCanvas(
+          el.splitPdfCanvas,
+          state.splitPage,
+          state.splitScale,
+          0,
+          ''
+        );
+        return;
+      }
+
+      if (manual.pdfDoc) {
+        try {
+          if (state.splitRenderTask) state.splitRenderTask.cancel();
+          const page = await manual.pdfDoc.getPage(state.splitPage);
+          const viewport = page.getViewport({ scale: state.splitScale });
+          const dpr = window.devicePixelRatio || 1;
+          const canvas = el.splitPdfCanvas;
+          canvas.width = Math.floor(viewport.width * dpr);
+          canvas.height = Math.floor(viewport.height * dpr);
+          canvas.style.width = `${Math.floor(viewport.width)}px`;
+          canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+          const ctx = canvas.getContext('2d');
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          state.splitRenderTask = page.render({ canvasContext: ctx, viewport });
+          await state.splitRenderTask.promise;
+        } catch (e) {
+          // Ignore cancelled split render
+        }
+      }
+    }
+
+    // =========================================================================
+    // 10. UI EVENT WIRING & KEYBOARD SHORTCUTS
+    // =========================================================================
+    function switchSidebarTab(tabName) {
+      el.sidebarTabs.forEach((btn) => {
+        const active = btn.getAttribute('data-tab') === tabName;
+        btn.classList.toggle('border-blue-600', active);
+        btn.classList.toggle('text-blue-600', active);
+        btn.classList.toggle('dark:text-blue-400', active);
+        btn.classList.toggle('border-transparent', !active);
+        btn.classList.toggle('text-slate-500', !active);
+      });
+
+      ['toc', 'thumbs', 'search', 'pins'].forEach((name) => {
+        const panel = document.getElementById(`tab-${name}`);
+        if (panel) panel.classList.toggle('hidden', name !== tabName);
+      });
+    }
+
+    // Sidebar tab clicks
+    el.sidebarTabs.forEach((btn) => {
+      btn.addEventListener('click', () => switchSidebarTab(btn.getAttribute('data-tab')));
+    });
+
+    // Toggle Sidebar
+    el.toggleSidebarBtn.addEventListener('click', () => {
+      el.leftSidebar.classList.toggle('hidden');
+      setTimeout(() => renderCurrentPage(), 210);
+    });
+
+    // Theme Toggle
+    el.themeToggleBtn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
+
+    // Manual Selector Dropdown
+    el.manualSelector.addEventListener('change', (e) => {
+      selectManual(e.target.value, 1);
+    });
+
+    // File Upload Input & Drag-and-Drop
+    el.pdfUploadInput.addEventListener('change', (e) => {
+      handlePdfFilesUpload(e.target.files);
+      e.target.value = '';
+    });
+
+    window.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      el.dragDropOverlay.classList.remove('hidden');
+    });
+    window.addEventListener('dragleave', (e) => {
+      if (e.relatedTarget === null) {
+        el.dragDropOverlay.classList.add('hidden');
+      }
+    });
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      el.dragDropOverlay.classList.add('hidden');
+      if (e.dataTransfer && e.dataTransfer.files) {
+        handlePdfFilesUpload(e.dataTransfer.files);
+      }
+    });
+
+    // Search Input & Quick Chips
+    let searchDebounce = null;
+    el.globalSearchInput.addEventListener('input', (e) => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => {
+        runFullTextSearch(e.target.value);
+      }, 150);
+    });
+
+    el.clearSearchBtn.addEventListener('click', () => {
+      el.globalSearchInput.value = '';
+      runFullTextSearch('');
+    });
+
+    el.searchAllManualsCheckbox.addEventListener('change', () => {
+      if (state.searchQuery) runFullTextSearch(state.searchQuery);
+    });
+
+    document.querySelectorAll('.quick-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const q = chip.getAttribute('data-query');
+        el.globalSearchInput.value = q;
+        runFullTextSearch(q);
+      });
+    });
+
+    el.prevMatchResultBtn.addEventListener('click', () => {
+      if (state.searchResults.length === 0) return;
+      const nextIdx =
+        (state.activeSearchResultIndex - 1 + state.searchResults.length) %
+        state.searchResults.length;
+      jumpToSearchResult(nextIdx);
+    });
+
+    el.nextMatchResultBtn.addEventListener('click', () => {
+      if (state.searchResults.length === 0) return;
+      const nextIdx = (state.activeSearchResultIndex + 1) % state.searchResults.length;
+      jumpToSearchResult(nextIdx);
+    });
+
+    el.closeMatchBarBtn.addEventListener('click', () => {
+      el.activeMatchBar.classList.add('hidden');
+    });
+
+    // Page Navigation Controls
+    el.prevPageBtn.addEventListener('click', () => goToPage(state.currentPage - 1));
+    el.nextPageBtn.addEventListener('click', () => goToPage(state.currentPage + 1));
+    el.pageNumberInput.addEventListener('change', (e) => {
+      const val = parseInt(e.target.value, 10);
+      if (!isNaN(val)) goToPage(val);
+    });
+
+    // Zoom Controls
+    el.zoomPresetSelect.addEventListener('change', (e) => {
+      state.zoomMode = e.target.value;
+      renderCurrentPage();
+    });
+
+    el.zoomInBtn.addEventListener('click', () => {
+      const next = Math.min(3.0, +(state.scale + 0.25).toFixed(2));
+      state.zoomMode = String(next);
+      el.zoomPresetSelect.value = state.zoomMode;
+      if (!el.zoomPresetSelect.value) {
+        const opt = document.createElement('option');
+        opt.value = state.zoomMode;
+        opt.textContent = `${Math.round(next * 100)}%`;
+        el.zoomPresetSelect.appendChild(opt);
+        el.zoomPresetSelect.value = state.zoomMode;
+      }
+      renderCurrentPage();
+    });
+
+    el.zoomOutBtn.addEventListener('click', () => {
+      const next = Math.max(0.5, +(state.scale - 0.25).toFixed(2));
+      state.zoomMode = String(next);
+      el.zoomPresetSelect.value = state.zoomMode;
+      if (!el.zoomPresetSelect.value) {
+        const opt = document.createElement('option');
+        opt.value = state.zoomMode;
+        opt.textContent = `${Math.round(next * 100)}%`;
+        el.zoomPresetSelect.appendChild(opt);
+        el.zoomPresetSelect.value = state.zoomMode;
+      }
+      renderCurrentPage();
+    });
+
+    // Rotation Controls
+    el.rotateCWBtn.addEventListener('click', () => {
+      state.rotation = (state.rotation + 90) % 360;
+      renderCurrentPage();
+    });
+
+    el.rotateCCWBtn.addEventListener('click', () => {
+      state.rotation = (state.rotation + 270) % 360;
+      renderCurrentPage();
+    });
+
+    // Pin Modal & Split Reference Controls
+    el.pinCurrentPageBtn.addEventListener('click', openPinModal);
+    el.addPinFromTabBtn.addEventListener('click', openPinModal);
+    el.closePinModalBtn.addEventListener('click', closePinModal);
+    el.cancelPinBtn.addEventListener('click', closePinModal);
+    el.savePinBtn.addEventListener('click', saveCurrentPagePin);
+    el.pinNoteInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') saveCurrentPagePin();
+    });
+
+    el.toggleSplitRefBtn.addEventListener('click', () => {
+      if (state.splitPaneOpen) {
+        state.splitPaneOpen = false;
+        el.splitReferencePane.classList.add('hidden');
+      } else {
+        openSplitReference(state.activeManualId, state.currentPage);
+      }
+      if (state.zoomMode === 'fit-width' || state.zoomMode === 'fit-page') {
+        renderCurrentPage();
+      }
+    });
+
+    el.sendToSplitBtn.addEventListener('click', () => {
+      openSplitReference(state.activeManualId, state.currentPage);
+      showToast(`Pinned Page ${state.currentPage} to side-by-side view`, 'info');
+    });
+
+    el.closeSplitRefBtn.addEventListener('click', () => {
+      state.splitPaneOpen = false;
+      el.splitReferencePane.classList.add('hidden');
+      if (state.zoomMode === 'fit-width' || state.zoomMode === 'fit-page') {
+        renderCurrentPage();
+      }
+    });
+
+    el.splitZoomInBtn.addEventListener('click', () => {
+      state.splitScale = Math.min(2.0, +(state.splitScale + 0.15).toFixed(2));
+      renderSplitReferenceCanvas();
+    });
+
+    el.splitZoomOutBtn.addEventListener('click', () => {
+      state.splitScale = Math.max(0.45, +(state.splitScale - 0.15).toFixed(2));
+      renderSplitReferenceCanvas();
+    });
+
+    document.querySelectorAll('.split-preset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const p = parseInt(btn.getAttribute('data-sample-page'), 10);
+        openSplitReference(SAMPLE_MANUAL_ID, p, btn.textContent);
+      });
+    });
+
+    // Keyboard shortcuts (avoid firing while typing in inputs)
+    window.addEventListener('keydown', (e) => {
+      const tag = document.activeElement ? document.activeElement.tagName : '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+        if (e.key === 'Escape') {
+          document.activeElement.blur();
+          closePinModal();
+        }
+        return;
+      }
+      if (e.key === 'ArrowRight') goToPage(state.currentPage + 1);
+      if (e.key === 'ArrowLeft') goToPage(state.currentPage - 1);
+      if (e.key === '/' || (e.ctrlKey && e.key.toLowerCase() === 'f')) {
+        e.preventDefault();
+        el.globalSearchInput.focus();
+      }
+    });
+
+    // Re-render on window resize if using Fit Width / Fit Page
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        if (state.zoomMode === 'fit-width' || state.zoomMode === 'fit-page') {
+          renderCurrentPage();
+        }
+      }, 150);
+    });
+
+    // Boot application on window load
+    window.onload = function () {
+      loadPinsFromStorage();
+      initSampleManual();
+    };
+  </script>
+</body>
+</html>
